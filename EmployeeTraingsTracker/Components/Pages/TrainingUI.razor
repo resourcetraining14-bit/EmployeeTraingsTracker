@@ -1,0 +1,130 @@
+﻿@page "/admin/trainings"
+@using EmployeeTraingsTracker.Model
+@using EmployeeTraingsTracker.Services
+@rendermode InteractiveServer
+
+
+@inject ITrainingService TrainingService
+
+<h3 class="text-2xl font-bold mb-4">Manage Trainings</h3>
+
+<!-- Add / Edit Training Form -->
+<div class="bg-white shadow rounded-2xl p-4 mb-6 w-full max-w-md">
+    <h4 class="text-lg font-semibold mb-3">@((EditingTraining?.Id > 0) ? "Edit Training" : "Add Training")</h4>
+
+    <div class="space-y-4">
+        <input @bind="EditingTraining.Title"
+               class="w-full border border-gray-300 rounded-lg p-2"
+               placeholder="Training Title" />
+
+        <textarea @bind="EditingTraining.Description"
+                  class="w-full border border-gray-300 rounded-lg p-2"
+                  placeholder="Training Description"></textarea>
+
+        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                @onclick="SaveTraining">
+            @((EditingTraining?.Id > 0) ? "Update" : "Add")
+        </button>
+
+        @if (EditingTraining?.Id > 0)
+        {
+            <button class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 ml-2"
+                    @onclick="CancelEdit">
+                Cancel
+            </button>
+        }
+    </div>
+</div>
+
+<!-- Training List -->
+<div class="bg-white shadow rounded-2xl p-4">
+    <h4 class="text-lg font-semibold mb-3">Training List</h4>
+
+    @if (Trainings == null)
+    {
+        <p class="text-gray-500">Loading trainings...</p>
+    }
+    else if (Trainings.Count == 0)
+    {
+        <p class="text-gray-500">No trainings found.</p>
+    }
+    else
+    {
+        <table class="w-full border-collapse">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="border p-2 text-left">Title</th>
+                    <th class="border p-2 text-left">Description</th>
+                    <th class="border p-2 text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var training in Trainings)
+                {
+                    <tr>
+                        <td class="border p-2">@training.Title</td>
+                        <td class="border p-2">@training.Description</td>
+                        <td class="border p-2 text-center">
+                            <button class="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 mr-2"
+                                    @onclick="() => EditTraining(training)">
+                                Edit
+                            </button>
+                            <button class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                                    @onclick="() => DeleteTraining(training.Id)">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code
+{
+    private List<Training>? Trainings;
+    [SupplyParameterFromForm]
+    private Training EditingTraining { get; set; } = new Training();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Trainings = await TrainingService.GetAllAsync();
+    }
+
+    private async Task SaveTraining()
+    {
+        if (EditingTraining.Id == 0)
+        {
+            await TrainingService.AddAsync(EditingTraining);
+        }
+        else
+        {
+            await TrainingService.UpdateAsync(EditingTraining);
+        }
+
+        EditingTraining = new Training();
+        Trainings = await TrainingService.GetAllAsync();
+    }
+
+    private void EditTraining(Training training)
+    {
+        EditingTraining = new Training
+        {
+            Id = training.Id,
+            Title = training.Title,
+            Description = training.Description
+        };
+    }
+
+    private async Task DeleteTraining(int id)
+    {
+        await TrainingService.DeleteAsync(id);
+        Trainings = await TrainingService.GetAllAsync();
+    }
+
+    private void CancelEdit()
+    {
+        EditingTraining = new Training();
+    }
+}

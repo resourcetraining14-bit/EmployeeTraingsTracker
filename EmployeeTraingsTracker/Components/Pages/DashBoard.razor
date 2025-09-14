@@ -1,0 +1,65 @@
+﻿@page "/employee/dashboard"
+@attribute [Authorize(Roles = "User")]
+
+@using EmployeeTraingsTracker.Services
+@using EmployeeTraingsTracker.Model
+@using Microsoft.AspNetCore.Authorization
+@inject IEmployeeService EmployeeService
+@inject ITrainingService TrainingService
+@inject IEmployeeTrainingService EmployeeTrainingService
+
+<h2 class="text-2xl font-bold mb-4">My Trainings</h2>
+
+<!-- Training Dropdown -->
+<div class="mb-6">
+    <select @bind="selectedTrainingId" class="border rounded p-2 mr-2">
+        <option value="">-- Select Training --</option>
+        @foreach (var training in trainings)
+        {
+            <option value="@training.Id">@training.Title</option>
+        }
+    </select>
+    <button class="bg-green-600 text-white px-4 py-2 rounded" @onclick="AddTraining">
+        Add Training
+    </button>
+</div>
+
+<!-- Training List -->
+<h3 class="text-lg font-semibold mb-2">Completed Trainings</h3>
+<ul class="list-disc ml-5">
+    @foreach (var et in completedTrainings)
+    {
+        <li>@et.Training.Title (Completed on: @et.CompletedOn.ToShortDateString())</li>
+    }
+</ul>
+
+@code
+{
+    private List<Training> trainings = new();
+    private List<EmployeeTraining> completedTrainings = new();
+    private int selectedTrainingId;
+
+    private int employeeId = 1; // TODO: Get from logged-in user (Identity mapping)
+
+    protected override async Task OnInitializedAsync()
+    {
+        trainings = await TrainingService.GetAllAsync();
+        completedTrainings = await EmployeeTrainingService.GetForEmployeeAsync(employeeId);
+    }
+
+    private async Task AddTraining()
+    {
+        if (selectedTrainingId > 0)
+        {
+            var et = new EmployeeTraining
+            {
+                EmployeeId = employeeId,
+                TrainingId = selectedTrainingId,
+                CompletedOn = DateTime.Now
+            };
+
+            await EmployeeTrainingService.AddAsync(et);
+            completedTrainings = await EmployeeTrainingService.GetForEmployeeAsync(employeeId);
+        }
+    }
+}

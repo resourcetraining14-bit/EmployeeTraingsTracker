@@ -1,0 +1,82 @@
+﻿@page "/admin/employees"
+@attribute [Authorize(Roles = "Admin")]
+
+@using EmployeeTraingsTracker.Model
+@using EmployeeTraingsTracker.Services
+@using Microsoft.AspNetCore.Authorization
+@inject IEmployeeService EmployeeService
+
+<h2 class="text-2xl font-bold mb-4">Employees</h2>
+
+<!-- Add New Employee -->
+<div class="mb-6">
+    <h3 class="text-lg font-semibold mb-2">Add Employee</h3>
+    <input @bind="newEmployee.Name" placeholder="Name" class="border rounded p-2 mr-2" />
+    <input @bind="newEmployee.Department" placeholder="Department" class="border rounded p-2 mr-2" />
+    <button class="bg-blue-600 text-white px-4 py-2 rounded" @onclick="AddEmployee">Add</button>
+</div>
+
+<!-- Employee List -->
+<table class="table-auto w-full border-collapse border border-gray-200">
+    <thead>
+        <tr class="bg-gray-100">
+            <th class="border px-4 py-2">ID</th>
+            <th class="border px-4 py-2">Name</th>
+            <th class="border px-4 py-2">Department</th>
+            <th class="border px-4 py-2">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (employees != null && employees.Any())
+        {
+            @foreach (var emp in employees)
+            {
+                <tr>
+                    <td class="border px-4 py-2">@emp.Id</td>
+                    <td class="border px-4 py-2">@emp.Name</td>
+                    <td class="border px-4 py-2">@emp.Department</td>
+                    <td class="border px-4 py-2">
+                        <button class="bg-red-600 text-white px-3 py-1 rounded"
+                                @onclick="() => DeleteEmployee(emp.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="4" class="text-center py-4">No employees found.</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code
+{
+    private List<Employee> employees;
+
+    private Employee newEmployee { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        employees = await EmployeeService.GetAllAsync();
+    }
+
+    private async Task AddEmployee()
+    {
+        if (!string.IsNullOrWhiteSpace(newEmployee.Name))
+        {
+            await EmployeeService.AddAsync(newEmployee);
+            employees = await EmployeeService.GetAllAsync();
+            newEmployee = new Employee();
+        }
+    }
+
+    private async Task DeleteEmployee(int id)
+    {
+        await EmployeeService.DeleteAsync(id);
+        employees = await EmployeeService.GetAllAsync();
+    }
+}
